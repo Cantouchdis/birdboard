@@ -5,9 +5,6 @@ namespace Tests\Setup;
 use App\Project;
 use App\Task;
 use App\User;
-use phpDocumentor\Reflection\DocBlock\Tags\Return_;
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ProjectFactory
 {

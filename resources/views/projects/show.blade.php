@@ -6,7 +6,20 @@
                 <a href="/projects" class="text-grey text-sm font-normal no-underline">
                     My Projects </a>/ {{ $project->title }}
             </p>
-            <a href="/projects/create" class="button">New project</a>
+
+            <div class="flex items-center">
+                @foreach($project->members as $member)
+                    <img src="https://gravatar.com/avatar/{{ md5($member->email) }}?s60"
+                         alt="{{ $member->name }}'s avatar"
+                         class="rounded-full w-8 mr-2">
+                @endforeach
+
+                <img src="https://gravatar.com/avatar/{{ md5($project->owner->email) }}?s60"
+                     alt="{{ $project->owner->name }}'s avatar"
+                     class="rounded-full w-8 mr-2">
+
+                <a href="{{ $project->path() . '/edit' }}" class="button ml-6">Edit project</a>
+            </div>
         </div>
     </header>
     <main>
@@ -50,10 +63,16 @@
 
                         <button type="submit" class="button">Save</button>
                     </form>
+                    @include('errors')
                 </div>
             </div>
             <div class="lg:w-1/4 px-3">
                 @include('projects.card')
+                @include('projects.activity.card')
+
+                @can('manage', $project)
+                    @include('projects.invite')
+                @endif
             </div>
         </div>
     </main>

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Project;
+use App\User;
 use Facades\Tests\Setup\ProjectFactory;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -20,8 +21,23 @@ class ManageProjectsTest extends TestCase
 
         $this->post('/projects', $project->toArray())->assertRedirect('login');
         $this->get('/projects/create')->assertRedirect('login');
+        $this->get($project->path().'/edit')->assertRedirect('login');
         $this->get($project->path())->assertRedirect('login');
         $this->get('projects')->assertRedirect('login');
+    }
+
+    /** @test */
+    public function unauthorized_users_cannot_delete_projects(){
+
+        $project = ProjectFactory::create();
+
+        $this->delete($project->path())
+            ->assertRedirect('/login');
+
+        $this->signIn();
+        $this->delete($project->path())
+                    ->assertStatus(403);
+
     }
 
     /** @test */
@@ -50,17 +66,51 @@ class ManageProjectsTest extends TestCase
     }
 
     /** @test */
+    public function a_user_can_see_projects_that_someone_has_invited_them_to()
+    {
+        $project = tap(ProjectFactory::create())->invite($this->signIn());
+
+        $this->get('/projects')->assertSee($project->title);
+    }
+
+    /** @test */
+    public function a_user_can_delete_a_project(){
+
+        $project = ProjectFactory::create();
+
+        $this->actingAs($project->owner)
+            ->delete($project->path())
+            ->assertRedirect('/projects');
+
+        $this->assertDatabaseMissing('projects', $project->only('id'));
+    }
+
+    /** @test */
     public function a_user_can_update_a_project(){
 
+        $project = ProjectFactory::create();
+
+        $this->actingAs($project->owner)
+            ->patch($project->path(), $attributes = ['title' => 'changed', 'description' => 'changed', 'notes' => 'changed'])
+            ->assertRedirect($project->path());
+
+        $this->get($project->path() . '/edit')->assertOk();
+
+        $this->assertDatabaseHas('projects', $attributes);
+    }
+
+    /** @test */
+    public function a_user_can_update_projects_general_note(){
         $project = ProjectFactory::create();
 
         $this->actingAs($project->owner)
             ->patch($project->path(), $attributes = ['notes' => 'changed'])
             ->assertRedirect($project->path());
 
+//        $this->get($project->path() . '/edit')->assertRedirect('login');
+
         $this->assertDatabaseHas('projects', $attributes);
     }
-
 
     /** @test */
     public function a_user_can_view_their_project(){
